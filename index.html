@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tic Tac Toe</title>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      margin: 0;
+      padding: 10px 20px 16px;
+      min-height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 2.3em;
+      margin: 0 0 6px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    #subtitle {
+      font-size: 1.05em;
+      margin: 0 0 12px;
+      opacity: 0.9;
+      min-height: 1.2em;
+    }
+
+    .mode {
+      margin: 10px 0 14px;
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .mode label {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 16px;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .mode label:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      gap: 12px;
+      justify-content: center;
+      margin: 16px 0;
+      perspective: 1000px;
+    }
+
+    button.cell {
+      width: 100px;
+      height: 100px;
+      font-size: 2.4em;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      color: #333;
+      font-weight: bold;
+    }
+
+    button.cell:hover:not(:disabled) {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      background: rgba(255, 255, 255, 1);
+    }
+
+    button.cell:disabled {
+      color: #333;
+      cursor: not-allowed;
+    }
+
+    #status {
+      font-size: 1.25em;
+      margin: 8px 0;
+      min-height: 1.4em;
+    }
+
+    .controls {
+      margin-top: 8px;
+    }
+
+    .controls button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 22px;
+      font-size: 1.05em;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+
+    .controls button:hover {
+      background: #45a049;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: repeat(3, 78px);
+        gap: 10px;
+      }
+
+      button.cell {
+        width: 78px;
+        height: 78px;
+        font-size: 2em;
+      }
+
+      h1 {
+        font-size: 1.9em;
+      }
+
+      body {
+        padding: 8px 12px 14px;
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Tic-Tac-Toe</h1>
+
+<p id="subtitle"></p>
+
+<div class="mode">
+  <label><input type="radio" name="mode" value="single" checked> Single Player</label>
+  <label><input type="radio" name="mode" value="multi"> Multiplayer</label>
+</div>
+
+<p id="status"></p>
+
+<div class="grid" id="grid"></div>
+
+<div class="controls">
+  <button onclick="resetGame()">Restart</button>
+</div>
+
+<script>
+let board, gameOver, currentSymbol, mode;
+
+const WINNING_LINES = [
+ [0,1,2],[3,4,5],[6,7,8],
+ [0,3,6],[1,4,7],[2,5,8],
+ [0,4,8],[2,4,6]
+];
+
+function availableMoves() {
+  return board.map((v,i)=>v===""?i:null).filter(v=>v!==null);
+}
+
+function checkWinner() {
+  for (let [a,b,c] of WINNING_LINES) {
+    if (board[a] && board[a]===board[b] && board[a]===board[c]) return board[a];
+  }
+  if (!availableMoves().length) return "Tie";
+  return null;
+}
+
+function minimax(isComputer) {
+  let result = checkWinner();
+  if (result==="O") return [1,null];
+  if (result==="X") return [-1,null];
+  if (result==="Tie") return [0,null];
+
+  let bestMove=null;
+
+  if (isComputer) {
+    let bestScore=-Infinity;
+    for (let move of availableMoves()) {
+      board[move]="O";
+      let [score]=minimax(false);
+      board[move]="";
+      if (score>bestScore){bestScore=score;bestMove=move;}
+    }
+    return [bestScore,bestMove];
+  } else {
+    let bestScore=Infinity;
+    for (let move of availableMoves()) {
+      board[move]="X";
+      let [score]=minimax(true);
+      board[move]="";
+      if (score<bestScore){bestScore=score;bestMove=move;}
+    }
+    return [bestScore,bestMove];
+  }
+}
+
+let buttons=[];
+
+function makeMove(i,symbol){
+  board[i]=symbol;
+  buttons[i].innerText=symbol;
+  buttons[i].disabled=true;
+}
+
+function playerMove(i){
+  if (gameOver || board[i]) return;
+
+  makeMove(i,currentSymbol);
+
+  let result=checkWinner();
+  if (finishGame(result)) return;
+
+  if (mode==="single"){
+    currentSymbol="O";
+    setStatus("Computer thinking...");
+    disableOpen();
+
+    setTimeout(()=>{
+      let [,move]=minimax(true);
+      makeMove(move,"O");
+
+      let result=checkWinner();
+      if (finishGame(result)) return;
+
+      currentSymbol="X";
+      enableOpen();
+      setStatus("Your turn. You are X.");
+    },300);
+
+  } else {
+    currentSymbol = currentSymbol==="X"?"O":"X";
+    setStatus("Player "+currentSymbol+"'s turn.");
+  }
+}
+
+function finishGame(result){
+  if (!result) return false;
+
+  gameOver=true;
+  disableOpen();
+
+  if (result==="Tie"){
+    setStatus("It's a tie.");
+  } else {
+    highlight(result);
+    if (mode==="multi"){
+      setStatus("Player "+result+" wins.");
+    } else if (result==="X"){
+      setStatus("You win.");
+    } else {
+      setStatus("Computer wins.");
+    }
+  }
+  return true;
+}
+
+function highlight(winner){
+  for (let [a,b,c] of WINNING_LINES){
+    if (board[a]===board[b] && board[a]===board[c] && board[a]===winner){
+      [a,b,c].forEach(i=>buttons[i].style.background="#d8c58b");
+      return;
+    }
+  }
+}
+
+function disableOpen(){
+  buttons.forEach((b,i)=>{ if(!board[i]) b.disabled=true; });
+}
+
+function enableOpen(){
+  buttons.forEach((b,i)=>{ if(!board[i]) b.disabled=false; });
+}
+
+function setStatus(text){
+  document.getElementById("status").innerText=text;
+}
+
+function updateMode(){
+  mode=document.querySelector('input[name="mode"]:checked').value;
+
+  if (mode==="single"){
+    document.getElementById("subtitle").innerText="Single player vs computer";
+    setStatus("Your turn. You are X.");
+  } else {
+    document.getElementById("subtitle").innerText="Multiplayer";
+    setStatus("Player X's turn.");
+  }
+}
+
+function resetGame(){
+  board=["","","","","","","","",""];
+  gameOver=false;
+  currentSymbol="X";
+
+  buttons.forEach(b=>{
+    b.innerText="";
+    b.disabled=false;
+    b.style.background="#fffaf2";
+  });
+
+  updateMode();
+}
+
+// setup
+let grid=document.getElementById("grid");
+
+for(let i=0;i<9;i++){
+  let btn=document.createElement("button");
+  btn.className="cell";
+  btn.onclick=()=>playerMove(i);
+  grid.appendChild(btn);
+  buttons.push(btn);
+}
+
+document.querySelectorAll('input[name="mode"]').forEach(r=>{
+  r.addEventListener("change",resetGame);
+});
+
+resetGame();
+</script>
+
+</body>
+</html>
