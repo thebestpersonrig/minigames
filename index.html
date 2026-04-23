@@ -16,16 +16,15 @@
       --muted: rgba(255, 255, 255, 0.82);
       --accent: #7ef0c5;
       --accent-2: #ffd166;
-      --danger: #ff8fab;
       --button: #49b96e;
       --button-hover: #3ca35f;
-      --board-max: min(78vw, 56vh, 360px);
+      --radius: 22px;
+      --shadow: 0 18px 40px rgba(12, 20, 44, 0.26);
+      --board-max: min(82vw, 52vh, 360px);
       --gap: 12px;
       --cell-size: calc((var(--board-max) - (var(--gap) * 2)) / 3);
-      --title-size: clamp(1.9rem, 4vw, 2.8rem);
-      --status-size: clamp(1rem, 2.3vw, 1.2rem);
-      --radius: 20px;
-      --shadow: 0 18px 40px rgba(12, 20, 44, 0.26);
+      --title-size: clamp(2rem, 4vw, 2.8rem);
+      --status-size: clamp(1rem, 2.2vw, 1.18rem);
     }
 
     * {
@@ -48,23 +47,54 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 16px;
-      overflow-x: hidden;
+      padding: 14px;
+      overflow: hidden;
     }
 
     .app {
       width: min(100%, 560px);
+      height: min(100dvh - 28px, 920px);
+      max-height: 100%;
       background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 28px;
       box-shadow: var(--shadow);
-      padding: 18px 18px 16px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .setup-screen {
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .game-screen {
+      justify-content: space-between;
+      gap: 10px;
     }
 
     .top {
       display: grid;
-      gap: 10px;
+      gap: 8px;
       text-align: center;
     }
 
@@ -79,20 +109,19 @@
     .subtitle {
       margin: 0;
       color: var(--muted);
-      font-size: 0.98rem;
+      font-size: 0.96rem;
     }
 
     .panel {
-      margin-top: 14px;
       background: var(--panel);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: var(--radius);
-      padding: 12px;
+      padding: 14px;
     }
 
     .options {
       display: grid;
-      gap: 10px;
+      gap: 12px;
     }
 
     .option-row {
@@ -103,7 +132,6 @@
     .option-label {
       font-size: 0.9rem;
       color: var(--muted);
-      text-align: left;
     }
 
     .segmented {
@@ -124,10 +152,11 @@
       background: rgba(255, 255, 255, 0.09);
       border: 1px solid rgba(255, 255, 255, 0.12);
       cursor: pointer;
-      font-size: 0.95rem;
-      transition: 0.2s ease;
+      font-size: 0.94rem;
+      transition: 0.18s ease;
       user-select: none;
       touch-action: manipulation;
+      text-align: center;
     }
 
     .segmented label:hover {
@@ -142,46 +171,84 @@
       font-weight: 700;
     }
 
+    .primary-action {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      background: var(--button);
+      color: white;
+      box-shadow: 0 12px 24px rgba(20, 26, 48, 0.2);
+      transition: 0.2s ease;
+      touch-action: manipulation;
+    }
+
+    .primary-action:hover {
+      background: var(--button-hover);
+      transform: translateY(-2px);
+    }
+
     .scoreboard {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 14px;
+      gap: 8px;
     }
 
     .score-card {
       background: var(--panel);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 18px;
-      padding: 10px;
+      padding: 10px 8px;
       text-align: center;
     }
 
     .score-card strong {
       display: block;
-      font-size: 1.35rem;
+      font-size: 1.28rem;
       margin-top: 4px;
     }
 
-    .status {
-      margin: 14px 0 10px;
-      min-height: 1.5em;
+    .game-header {
+      display: grid;
+      gap: 8px;
       text-align: center;
-      font-size: var(--status-size);
-      font-weight: 600;
-      color: var(--text);
     }
 
-    .board-wrap {
+    .game-title {
+      margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      line-height: 1.08;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+      min-height: 1.2em;
+    }
+
+    .status {
+      min-height: 1.4em;
+      text-align: center;
+      font-size: var(--status-size);
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .board-area {
       display: flex;
+      flex: 1;
+      min-height: 0;
       justify-content: center;
+      align-items: center;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(3, var(--cell-size));
       gap: var(--gap);
-      margin: 6px 0 10px;
     }
 
     .cell {
@@ -226,83 +293,76 @@
     }
 
     .controls {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 10px;
+      display: grid;
+      gap: 8px;
     }
 
     .controls button {
       border: none;
       border-radius: 999px;
-      padding: 10px 18px;
-      font-size: 0.98rem;
-      font-weight: 700;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      font-weight: 800;
       cursor: pointer;
       transition: 0.2s ease;
       box-shadow: 0 8px 18px rgba(20, 26, 48, 0.18);
       touch-action: manipulation;
     }
 
-    .primary {
+    .btn-primary {
       background: var(--button);
       color: white;
     }
 
-    .primary:hover {
+    .btn-primary:hover {
       background: var(--button-hover);
       transform: translateY(-2px);
     }
 
-    .secondary {
-      background: rgba(255, 255, 255, 0.92);
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.94);
       color: var(--text-dark);
     }
 
-    .secondary:hover {
+    .btn-secondary:hover {
       transform: translateY(-2px);
     }
 
-    .footer-note {
-      margin-top: 10px;
-      text-align: center;
-      color: rgba(255, 255, 255, 0.78);
-      font-size: 0.85rem;
+    .btn-tertiary {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .btn-tertiary:hover {
+      background: rgba(255,255,255,0.18);
+      transform: translateY(-2px);
     }
 
     @keyframes pulse {
-      from {
-        transform: scale(1);
-      }
-      to {
-        transform: scale(1.04);
-      }
+      from { transform: scale(1); }
+      to { transform: scale(1.04); }
     }
 
     @media (max-width: 700px) {
       :root {
-        --board-max: min(88vw, 50vh, 320px);
+        --board-max: min(88vw, 48vh, 320px);
         --gap: 10px;
       }
 
       .app {
-        padding: 14px 14px 14px;
-        border-radius: 24px;
+        width: min(100%, 500px);
+        height: min(100dvh - 20px, 860px);
       }
 
-      .scoreboard {
-        gap: 8px;
-      }
-
-      .score-card {
-        padding: 9px;
+      .screen {
+        padding: 14px;
       }
     }
 
     @media (max-width: 480px) {
       :root {
-        --board-max: min(92vw, 46vh, 290px);
+        --board-max: min(92vw, 44vh, 285px);
         --gap: 8px;
       }
 
@@ -311,12 +371,14 @@
       }
 
       .app {
-        width: min(100%, 470px);
-        padding: 12px;
+        width: 100%;
+        height: min(100dvh - 20px, 820px);
+        border-radius: 24px;
       }
 
-      .subtitle {
-        font-size: 0.9rem;
+      .subtitle,
+      .meta {
+        font-size: 0.88rem;
       }
 
       .segmented {
@@ -325,18 +387,13 @@
 
       .segmented label {
         font-size: 0.9rem;
-        padding: 7px 11px;
-      }
-
-      .controls button {
-        font-size: 0.94rem;
-        padding: 9px 16px;
+        padding: 7px 10px;
       }
     }
 
     @media (max-width: 380px) {
       :root {
-        --board-max: min(92vw, 42vh, 250px);
+        --board-max: min(92vw, 40vh, 245px);
         --gap: 7px;
       }
 
@@ -349,22 +406,17 @@
       }
 
       .segmented label {
-        text-align: center;
+        width: 100%;
       }
     }
 
     @media (max-height: 720px) {
       :root {
-        --board-max: min(84vw, 44vh, 280px);
+        --board-max: min(84vw, 42vh, 270px);
       }
 
-      body {
-        align-items: stretch;
-        justify-content: center;
-      }
-
-      .app {
-        margin: auto;
+      .screen {
+        padding: 12px;
       }
 
       h1 {
@@ -374,104 +426,113 @@
       .subtitle {
         display: none;
       }
-
-      .panel {
-        margin-top: 10px;
-      }
-
-      .status {
-        margin: 10px 0 8px;
-      }
     }
 
     @media (max-height: 620px) {
       :root {
-        --board-max: min(80vw, 38vh, 230px);
-      }
-
-      body {
-        align-items: flex-start;
+        --board-max: min(78vw, 36vh, 220px);
       }
 
       .app {
-        margin-top: 8px;
-        margin-bottom: 8px;
+        height: min(100dvh - 12px, 760px);
+      }
+
+      .game-header {
+        gap: 4px;
+      }
+
+      .score-card {
+        padding: 8px 6px;
+      }
+
+      .controls button {
+        padding: 9px 14px;
       }
     }
   </style>
 </head>
 <body>
   <main class="app">
-    <section class="top">
-      <h1>Tic-Tac-Toe</h1>
-      <p class="subtitle">Responsive, accessible, and smarter on every screen.</p>
-    </section>
+    <section class="screen setup-screen active" id="setupScreen">
+      <div class="top">
+        <h1>Tic-Tac-Toe</h1>
+        <p class="subtitle">Choose your setup first, then play on a clean game screen with no scrolling.</p>
+      </div>
 
-    <section class="panel options" aria-label="Game settings">
-      <div class="option-row">
-        <div class="option-label">Mode</div>
-        <div class="segmented" id="modeControls">
-          <input type="radio" id="modeSingle" name="mode" value="single" checked>
-          <label for="modeSingle">Single Player</label>
+      <div class="panel options" aria-label="Game settings">
+        <div class="option-row">
+          <div class="option-label">Mode</div>
+          <div class="segmented">
+            <input type="radio" id="modeSingle" name="mode" value="single" checked>
+            <label for="modeSingle">Single Player</label>
 
-          <input type="radio" id="modeMulti" name="mode" value="multi">
-          <label for="modeMulti">Multiplayer</label>
+            <input type="radio" id="modeMulti" name="mode" value="multi">
+            <label for="modeMulti">Multiplayer</label>
+          </div>
+        </div>
+
+        <div class="option-row">
+          <div class="option-label">Difficulty</div>
+          <div class="segmented" id="difficultyGroup">
+            <input type="radio" id="difficultyEasy" name="difficulty" value="easy">
+            <label for="difficultyEasy">Easy</label>
+
+            <input type="radio" id="difficultyMedium" name="difficulty" value="medium" checked>
+            <label for="difficultyMedium">Medium</label>
+
+            <input type="radio" id="difficultyHard" name="difficulty" value="hard">
+            <label for="difficultyHard">Impossible</label>
+          </div>
+        </div>
+
+        <div class="option-row">
+          <div class="option-label">First turn</div>
+          <div class="segmented">
+            <input type="radio" id="firstHuman" name="firstTurn" value="human" checked>
+            <label for="firstHuman">You / X</label>
+
+            <input type="radio" id="firstComputer" name="firstTurn" value="computer">
+            <label for="firstComputer">Computer / O</label>
+          </div>
         </div>
       </div>
 
-      <div class="option-row">
-        <div class="option-label">Difficulty</div>
-        <div class="segmented" id="difficultyControls">
-          <input type="radio" id="difficultyEasy" name="difficulty" value="easy">
-          <label for="difficultyEasy">Easy</label>
+      <button class="primary-action" id="startGameBtn" type="button">Start Game</button>
+    </section>
 
-          <input type="radio" id="difficultyMedium" name="difficulty" value="medium" checked>
-          <label for="difficultyMedium">Medium</label>
+    <section class="screen game-screen" id="gameScreen">
+      <div class="game-header">
+        <h2 class="game-title">Tic-Tac-Toe</h2>
+        <div class="meta" id="gameMeta"></div>
+      </div>
 
-          <input type="radio" id="difficultyHard" name="difficulty" value="hard">
-          <label for="difficultyHard">Impossible</label>
+      <div class="scoreboard" aria-label="Scoreboard">
+        <div class="score-card">
+          <div id="scoreLabelX">Player X</div>
+          <strong id="scoreX">0</strong>
+        </div>
+        <div class="score-card">
+          <div>Ties</div>
+          <strong id="scoreTies">0</strong>
+        </div>
+        <div class="score-card">
+          <div id="scoreLabelO">Player O</div>
+          <strong id="scoreO">0</strong>
         </div>
       </div>
 
-      <div class="option-row">
-        <div class="option-label">First turn</div>
-        <div class="segmented" id="firstTurnControls">
-          <input type="radio" id="firstHuman" name="firstTurn" value="human" checked>
-          <label for="firstHuman">You / X</label>
+      <p class="status" id="status" aria-live="polite"></p>
 
-          <input type="radio" id="firstComputer" name="firstTurn" value="computer">
-          <label for="firstComputer">Computer / O</label>
-        </div>
+      <div class="board-area">
+        <div class="grid" id="grid" role="grid" aria-label="Tic Tac Toe board"></div>
+      </div>
+
+      <div class="controls">
+        <button class="btn-primary" id="restartSameBtn" type="button">Restart Same Settings</button>
+        <button class="btn-secondary" id="changeSettingsBtn" type="button">Change Settings</button>
+        <button class="btn-tertiary" id="resetScoresBtn" type="button">Reset Scores</button>
       </div>
     </section>
-
-    <section class="scoreboard" aria-label="Scoreboard">
-      <div class="score-card">
-        <div id="scoreLabelX">Player X</div>
-        <strong id="scoreX">0</strong>
-      </div>
-      <div class="score-card">
-        <div>Ties</div>
-        <strong id="scoreTies">0</strong>
-      </div>
-      <div class="score-card">
-        <div id="scoreLabelO">Player O</div>
-        <strong id="scoreO">0</strong>
-      </div>
-    </section>
-
-    <p class="status" id="status" aria-live="polite"></p>
-
-    <div class="board-wrap">
-      <div class="grid" id="grid" role="grid" aria-label="Tic Tac Toe board"></div>
-    </div>
-
-    <div class="controls">
-      <button class="primary" id="restartRoundBtn" type="button">Restart Round</button>
-      <button class="secondary" id="resetScoresBtn" type="button">Reset Scores</button>
-    </div>
-
-    <div class="footer-note" id="footerNote">Tip: on impossible mode, the AI will never lose.</div>
   </main>
 
   <script>
@@ -493,31 +554,34 @@
       currentPlayer: "X",
       gameOver: false,
       winningLine: null,
-      mode: "single",
-      difficulty: "medium",
-      firstTurn: "human",
       isComputerThinking: false,
-      scores: {
-        X: 0,
-        O: 0,
-        ties: 0
+      scores: { X: 0, O: 0, ties: 0 },
+      settings: {
+        mode: "single",
+        difficulty: "medium",
+        firstTurn: "human"
       }
     };
 
     const elements = {
+      setupScreen: document.getElementById("setupScreen"),
+      gameScreen: document.getElementById("gameScreen"),
+      startGameBtn: document.getElementById("startGameBtn"),
+      restartSameBtn: document.getElementById("restartSameBtn"),
+      changeSettingsBtn: document.getElementById("changeSettingsBtn"),
+      resetScoresBtn: document.getElementById("resetScoresBtn"),
       grid: document.getElementById("grid"),
       status: document.getElementById("status"),
-      footerNote: document.getElementById("footerNote"),
+      gameMeta: document.getElementById("gameMeta"),
       scoreX: document.getElementById("scoreX"),
       scoreO: document.getElementById("scoreO"),
       scoreTies: document.getElementById("scoreTies"),
       scoreLabelX: document.getElementById("scoreLabelX"),
       scoreLabelO: document.getElementById("scoreLabelO"),
-      restartRoundBtn: document.getElementById("restartRoundBtn"),
-      resetScoresBtn: document.getElementById("resetScoresBtn"),
       modeInputs: document.querySelectorAll('input[name="mode"]'),
       difficultyInputs: document.querySelectorAll('input[name="difficulty"]'),
-      firstTurnInputs: document.querySelectorAll('input[name="firstTurn"]')
+      firstTurnInputs: document.querySelectorAll('input[name="firstTurn"]'),
+      difficultyGroup: document.getElementById("difficultyGroup")
     };
 
     const cells = [];
@@ -534,6 +598,33 @@
         elements.grid.appendChild(button);
         cells.push(button);
       }
+    }
+
+    function showScreen(name) {
+      elements.setupScreen.classList.toggle("active", name === "setup");
+      elements.gameScreen.classList.toggle("active", name === "game");
+    }
+
+    function getInputValue(name) {
+      return document.querySelector(`input[name="${name}"]:checked`).value;
+    }
+
+    function syncSettingsFromInputs() {
+      state.settings.mode = getInputValue("mode");
+      state.settings.difficulty = getInputValue("difficulty");
+      state.settings.firstTurn = getInputValue("firstTurn");
+    }
+
+    function refreshSettingsUI() {
+      const isSingle = getInputValue("mode") === "single";
+
+      elements.difficultyInputs.forEach(input => {
+        input.disabled = !isSingle;
+      });
+
+      document.querySelector('label[for="firstHuman"]').textContent = isSingle ? "You / X" : "Player X";
+      document.querySelector('label[for="firstComputer"]').textContent = isSingle ? "Computer / O" : "Player O";
+      elements.difficultyGroup.style.opacity = isSingle ? "1" : "0.55";
     }
 
     function getAvailableMoves(board = state.board) {
@@ -558,105 +649,16 @@
       return { winner: null, line: null };
     }
 
-    function setStatus(message) {
-      elements.status.textContent = message;
-    }
-
-    function updateFooterNote() {
-      if (state.mode === "multi") {
-        elements.footerNote.textContent = "Two-player mode is on. X always starts unless you change first turn.";
-        return;
-      }
-
-      if (state.difficulty === "easy") {
-        elements.footerNote.textContent = "Easy mode plays randomly sometimes, so you can definitely beat it.";
-      } else if (state.difficulty === "medium") {
-        elements.footerNote.textContent = "Medium mode mixes smart moves with occasional mistakes.";
-      } else {
-        elements.footerNote.textContent = "Impossible mode uses minimax with faster-win logic and smart tie-breaking.";
-      }
-    }
-
-    function updateScoreLabels() {
-      if (state.mode === "single") {
-        elements.scoreLabelX.textContent = "You";
-        elements.scoreLabelO.textContent = "Computer";
-      } else {
-        elements.scoreLabelX.textContent = "Player X";
-        elements.scoreLabelO.textContent = "Player O";
-      }
-    }
-
-    function renderScores() {
-      elements.scoreX.textContent = state.scores.X;
-      elements.scoreO.textContent = state.scores.O;
-      elements.scoreTies.textContent = state.scores.ties;
-      updateScoreLabels();
-    }
-
-    function renderBoard() {
-      cells.forEach((cell, index) => {
-        const value = state.board[index];
-        const isWinning = state.winningLine && state.winningLine.includes(index);
-        const disabled = state.gameOver || state.isComputerThinking || value !== "";
-
-        cell.textContent = value;
-        cell.disabled = disabled;
-        cell.classList.toggle("x", value === "X");
-        cell.classList.toggle("o", value === "O");
-        cell.classList.toggle("winning", Boolean(isWinning));
-
-        if (value === "") {
-          cell.setAttribute("aria-label", `Empty cell ${index + 1}`);
-        } else {
-          cell.setAttribute("aria-label", `${value} in cell ${index + 1}`);
-        }
-      });
-    }
-
-    function renderControls() {
-      const isSingle = state.mode === "single";
-
-      elements.difficultyInputs.forEach(input => {
-        input.disabled = !isSingle;
-      });
-
-      const firstTurnLabels = {
-        human: isSingle ? "You / X" : "Player X",
-        computer: isSingle ? "Computer / O" : "Player O"
-      };
-
-      document.querySelector('label[for="firstHuman"]').textContent = firstTurnLabels.human;
-      document.querySelector('label[for="firstComputer"]').textContent = firstTurnLabels.computer;
-      updateFooterNote();
-    }
-
-    function renderAll() {
-      renderBoard();
-      renderScores();
-      renderControls();
-    }
-
-    function applyMove(index, symbol) {
-      if (state.board[index] !== "" || state.gameOver) return false;
-      state.board[index] = symbol;
-      return true;
-    }
-
     function preferredMoveOrder(moves) {
       return [...moves].sort((a, b) => MOVE_PRIORITY.indexOf(a) - MOVE_PRIORITY.indexOf(b));
-    }
-
-    function randomChoice(list) {
-      return list[Math.floor(Math.random() * list.length)];
     }
 
     function findImmediateMove(symbol, board = state.board) {
       const moves = preferredMoveOrder(getAvailableMoves(board));
       for (const move of moves) {
-        const next = [...board];
-        next[move] = symbol;
-        if (evaluateBoard(next).winner === symbol) {
+        const nextBoard = [...board];
+        nextBoard[move] = symbol;
+        if (evaluateBoard(nextBoard).winner === symbol) {
           return move;
         }
       }
@@ -677,18 +679,16 @@
       for (const move of preferredMoveOrder(getAvailableMoves(board))) {
         const nextBoard = [...board];
         nextBoard[move] = currentSymbol;
-
-        const nextResult = minimax(nextBoard, currentSymbol === "X" ? "O" : "X", depth + 1);
-        const score = nextResult.score;
+        const resultNext = minimax(nextBoard, currentSymbol === "X" ? "O" : "X", depth + 1);
 
         if (maximizing) {
-          if (score > bestScore) {
-            bestScore = score;
+          if (resultNext.score > bestScore) {
+            bestScore = resultNext.score;
             bestMove = move;
           }
         } else {
-          if (score < bestScore) {
-            bestScore = score;
+          if (resultNext.score < bestScore) {
+            bestScore = resultNext.score;
             bestMove = move;
           }
         }
@@ -697,33 +697,93 @@
       return { score: bestScore, move: bestMove };
     }
 
+    function randomChoice(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
     function getComputerMove() {
       const available = preferredMoveOrder(getAvailableMoves());
+      if (!available.length) return null;
 
-      if (available.length === 0) return null;
+      const difficulty = state.settings.difficulty;
 
-      if (state.difficulty === "easy") {
-        const winningMove = findImmediateMove("O");
-        if (winningMove !== null && Math.random() < 0.75) return winningMove;
+      if (difficulty === "easy") {
+        const win = findImmediateMove("O");
+        if (win !== null && Math.random() < 0.75) return win;
         if (Math.random() < 0.65) return randomChoice(available);
-        const blockMove = findImmediateMove("X");
-        if (blockMove !== null) return blockMove;
+        const block = findImmediateMove("X");
+        if (block !== null) return block;
         return randomChoice(available);
       }
 
-      if (state.difficulty === "medium") {
-        const winningMove = findImmediateMove("O");
-        if (winningMove !== null) return winningMove;
+      if (difficulty === "medium") {
+        const win = findImmediateMove("O");
+        if (win !== null) return win;
 
-        const blockMove = findImmediateMove("X");
-        if (blockMove !== null && Math.random() < 0.9) return blockMove;
+        const block = findImmediateMove("X");
+        if (block !== null && Math.random() < 0.9) return block;
 
         if (Math.random() < 0.3) return randomChoice(available);
-
         return minimax([...state.board], "O").move;
       }
 
       return minimax([...state.board], "O").move;
+    }
+
+    function setStatus(message) {
+      elements.status.textContent = message;
+    }
+
+    function updateMeta() {
+      const { mode, difficulty, firstTurn } = state.settings;
+      if (mode === "single") {
+        elements.gameMeta.textContent = `Single Player • ${difficulty[0].toUpperCase() + difficulty.slice(1)} • ${firstTurn === "human" ? "You start" : "Computer starts"}`;
+        elements.scoreLabelX.textContent = "You";
+        elements.scoreLabelO.textContent = "Computer";
+      } else {
+        elements.gameMeta.textContent = `Multiplayer • ${firstTurn === "human" ? "Player X starts" : "Player O starts"}`;
+        elements.scoreLabelX.textContent = "Player X";
+        elements.scoreLabelO.textContent = "Player O";
+      }
+    }
+
+    function renderScores() {
+      elements.scoreX.textContent = state.scores.X;
+      elements.scoreO.textContent = state.scores.O;
+      elements.scoreTies.textContent = state.scores.ties;
+    }
+
+    function renderBoard() {
+      cells.forEach((cell, index) => {
+        const value = state.board[index];
+        const isWinning = state.winningLine && state.winningLine.includes(index);
+        const disabled = state.gameOver || state.isComputerThinking || value !== "";
+
+        cell.textContent = value;
+        cell.disabled = disabled;
+        cell.classList.toggle("x", value === "X");
+        cell.classList.toggle("o", value === "O");
+        cell.classList.toggle("winning", Boolean(isWinning));
+        cell.setAttribute("aria-label", value ? `${value} in cell ${index + 1}` : `Empty cell ${index + 1}`);
+      });
+    }
+
+    function updateTurnStatus() {
+      if (state.gameOver) return;
+
+      if (state.settings.mode === "multi") {
+        setStatus(`Player ${state.currentPlayer}'s turn.`);
+      } else if (state.currentPlayer === "X") {
+        setStatus("Your turn.");
+      } else {
+        setStatus("Computer is thinking...");
+      }
+    }
+
+    function applyMove(index, symbol) {
+      if (state.board[index] !== "" || state.gameOver) return false;
+      state.board[index] = symbol;
+      return true;
     }
 
     function finishRound(winner, line) {
@@ -735,14 +795,15 @@
         setStatus("It's a tie.");
       } else {
         state.scores[winner] += 1;
-        if (state.mode === "single") {
+        if (state.settings.mode === "single") {
           setStatus(winner === "X" ? "You win." : "Computer wins.");
         } else {
           setStatus(`Player ${winner} wins.`);
         }
       }
 
-      renderAll();
+      renderScores();
+      renderBoard();
     }
 
     function checkRoundState() {
@@ -752,52 +813,17 @@
       return true;
     }
 
-    function updateTurnStatus() {
-      if (state.gameOver) return;
-
-      if (state.mode === "multi") {
-        setStatus(`Player ${state.currentPlayer}'s turn.`);
-        return;
-      }
-
-      if (state.currentPlayer === "X") {
-        setStatus("Your turn.");
-      } else {
-        setStatus("Computer is thinking...");
-      }
-    }
-
-    function handleCellClick(index) {
-      if (state.gameOver || state.isComputerThinking) return;
-      if (state.board[index] !== "") return;
-
-      const symbol = state.currentPlayer;
-      applyMove(index, symbol);
-      renderBoard();
-
-      if (checkRoundState()) return;
-
-      state.currentPlayer = symbol === "X" ? "O" : "X";
-      updateTurnStatus();
-      renderBoard();
-
-      if (state.mode === "single" && state.currentPlayer === "O") {
-        triggerComputerTurn();
-      }
-    }
-
     function triggerComputerTurn() {
-      if (state.mode !== "single" || state.gameOver || state.currentPlayer !== "O") return;
+      if (state.settings.mode !== "single" || state.gameOver || state.currentPlayer !== "O") return;
 
       state.isComputerThinking = true;
       renderBoard();
       updateTurnStatus();
 
-      const delay = state.board.filter(Boolean).length <= 1 ? 380 : 260;
+      const delay = state.board.filter(Boolean).length <= 1 ? 380 : 240;
 
-      window.setTimeout(() => {
+      setTimeout(() => {
         const move = getComputerMove();
-
         state.isComputerThinking = false;
 
         if (move === null || state.gameOver) {
@@ -816,41 +842,51 @@
       }, delay);
     }
 
-    function syncSettingsFromInputs() {
-      state.mode = document.querySelector('input[name="mode"]:checked').value;
-      state.difficulty = document.querySelector('input[name="difficulty"]:checked').value;
-      state.firstTurn = document.querySelector('input[name="firstTurn"]:checked').value;
+    function handleCellClick(index) {
+      if (state.gameOver || state.isComputerThinking) return;
+      if (state.board[index] !== "") return;
+
+      applyMove(index, state.currentPlayer);
+      renderBoard();
+
+      if (checkRoundState()) return;
+
+      state.currentPlayer = state.currentPlayer === "X" ? "O" : "X";
+      updateTurnStatus();
+      renderBoard();
+
+      if (state.settings.mode === "single" && state.currentPlayer === "O") {
+        triggerComputerTurn();
+      }
     }
 
-    function resetBoardState() {
+    function resetBoard() {
       state.board = Array(9).fill("");
       state.gameOver = false;
       state.winningLine = null;
       state.isComputerThinking = false;
-      state.currentPlayer = "X";
+      state.currentPlayer = state.settings.firstTurn === "computer" ? "O" : "X";
+      renderBoard();
+      updateMeta();
+      updateTurnStatus();
+
+      if (state.settings.mode === "single" && state.currentPlayer === "O") {
+        triggerComputerTurn();
+      }
     }
 
-    function startRound() {
+    function startGameFromSettings() {
       syncSettingsFromInputs();
-      resetBoardState();
-      renderAll();
+      updateMeta();
+      renderScores();
+      showScreen("game");
+      resetBoard();
+    }
 
-      if (state.mode === "single") {
-        if (state.firstTurn === "computer") {
-          state.currentPlayer = "O";
-          updateTurnStatus();
-          renderBoard();
-          triggerComputerTurn();
-        } else {
-          state.currentPlayer = "X";
-          updateTurnStatus();
-          renderBoard();
-        }
-      } else {
-        state.currentPlayer = state.firstTurn === "computer" ? "O" : "X";
-        updateTurnStatus();
-        renderBoard();
-      }
+    function changeSettings() {
+      state.isComputerThinking = false;
+      showScreen("setup");
+      refreshSettingsUI();
     }
 
     function resetScores() {
@@ -858,22 +894,21 @@
       renderScores();
     }
 
-    function attachSettingsListeners() {
+    function attachListeners() {
       [...elements.modeInputs, ...elements.difficultyInputs, ...elements.firstTurnInputs].forEach(input => {
-        input.addEventListener("change", startRound);
+        input.addEventListener("change", refreshSettingsUI);
       });
 
-      elements.restartRoundBtn.addEventListener("click", startRound);
-
-      elements.resetScoresBtn.addEventListener("click", () => {
-        resetScores();
-        startRound();
-      });
+      elements.startGameBtn.addEventListener("click", startGameFromSettings);
+      elements.restartSameBtn.addEventListener("click", resetBoard);
+      elements.changeSettingsBtn.addEventListener("click", changeSettings);
+      elements.resetScoresBtn.addEventListener("click", resetScores);
     }
 
     createBoard();
-    attachSettingsListeners();
-    startRound();
+    attachListeners();
+    refreshSettingsUI();
+    renderScores();
   </script>
 </body>
 </html>
