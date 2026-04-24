@@ -250,10 +250,10 @@ import GameLayout from '../../layouts/GameLayout.astro';
     const key = diffSel.value;
     diff = { ...DIFFICULTIES[key] };
     if (IS_PHONE) {
-      diff.pipeGap      = Math.round(diff.pipeGap      * 1.28);
-      diff.pipeSpeed    = diff.pipeSpeed    * 0.75;
-      diff.gravity      = diff.gravity      * 0.80;
-      diff.pipeInterval = Math.round(diff.pipeInterval * 1.20);
+      diff.pipeGap      = Math.round(diff.pipeGap      * 1.55);
+      diff.pipeSpeed    = diff.pipeSpeed    * 0.62;
+      diff.gravity      = diff.gravity      * 0.68;
+      diff.pipeInterval = Math.round(diff.pipeInterval * 1.45);
     }
     diffBadge.textContent = key;
     diffBadge.className = `hud-item diff-badge ${key}`;
