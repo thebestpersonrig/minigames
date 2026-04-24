@@ -25,7 +25,7 @@ This is an **Astro static site** deployed to GitHub Pages at `https://thebestper
 
 ## Workflow
 
-After every fix or change, commit the changes with a descriptive message and push to the `main` branch on GitHub (`origin`).
+After every fix or change, commit the changes with a descriptive message, push the branch to `origin`, and open a GitHub Pull Request targeting `main`.
 
 ## Key implementation details
 
