@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE = '/tic-tac-toe';
+const BASE = '/minigames';
 
 const viewports = [
   { name: '320x568 (SE portrait)', w: 320, h: 568 },

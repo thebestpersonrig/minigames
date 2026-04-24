@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE = '/tic-tac-toe';
+const BASE = '/minigames';
 
 test.describe('Tic-Tac-Toe', () => {
   test('landing page links to the game', async ({ page }) => {
