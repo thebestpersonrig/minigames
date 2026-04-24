@@ -8,6 +8,11 @@ import GameLayout from '../../layouts/GameLayout.astro';
     <div class="settings-screen active" id="settings-screen">
       <h1 class="game-title">2048</h1>
       <p class="tagline">Slide tiles to combine them.<br/>Reach <strong>2048</strong> to win!</p>
+      <label class="infinite-label">
+        <input type="checkbox" id="infinite-toggle" />
+        <span>Infinite Mode</span>
+      </label>
+      <p class="infinite-desc">No win limit — play until no moves remain</p>
       <button class="btn-primary" id="start-btn">Start Game</button>
     </div>
 
@@ -62,7 +67,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
   }
 </style>
 
-<style>
+<style is:global>
   /* ═══ Layout ═══ */
   .g2048-wrap {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -84,6 +89,12 @@ import GameLayout from '../../layouts/GameLayout.astro';
   }
   .tagline { margin: 0; font-size: 1rem; color: rgba(255,255,255,0.75); line-height: 1.55; }
   .tagline strong { color: #f9a825; }
+  .infinite-label {
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 0.95rem; color: rgba(255,255,255,0.85); user-select: none;
+  }
+  .infinite-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: #f9a825; cursor: pointer; }
+  .infinite-desc { margin: -8px 0 0; font-size: 0.76rem; color: rgba(255,255,255,0.42); }
 
   /* ═══ Game screen ═══ */
   .game-screen {
@@ -225,6 +236,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
   const tryAgainBtn    = document.getElementById('try-again-btn');
   const scoreEl        = document.getElementById('score-val');
   const bestEl         = document.getElementById('best-val');
+  const infiniteToggle = document.getElementById('infinite-toggle');
 
   const SIZE     = 4;
   const SLIDE_MS = 140;
@@ -232,7 +244,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
 
   let tiles = [], nextId = 0;
   const tileEls = new Map();        // id → outer DOM element
-  let score = 0, best = 0, won = false, over = false, animating = false;
+  let score = 0, best = 0, won = false, over = false, animating = false, infiniteMode = false;
   let metrics = null;
 
   /* ── Layout metrics (memoised, cleared on resize) ── */
@@ -388,7 +400,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
     spawnTile();
     animating = false;
 
-    if (!won && tiles.some(t => t.value >= 2048)) {
+    if (!won && !infiniteMode && tiles.some(t => t.value >= 2048)) {
       won = true;
       showOverlay('You reached\n2048! 🎉', true);
       return;
@@ -453,6 +465,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
 
   /* ── Screen transitions ── */
   startBtn.addEventListener('click', () => {
+    infiniteMode = infiniteToggle.checked;
     settingsScreen.classList.remove('active');
     gameScreen.classList.add('active');
     newGame();
