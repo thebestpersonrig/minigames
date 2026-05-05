@@ -76,7 +76,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
   .settings-screen { gap: 20px; max-width: 400px; }
   .game-screen {
     gap: clamp(8px, 1.6vh, 14px);
-    max-width: min(980px, 100%);
+    max-width: min(1120px, 100%);
   }
   .game-title {
     margin: 0;
@@ -134,9 +134,9 @@ import GameLayout from '../../layouts/GameLayout.astro';
   .diff-badge.hard { background: #fee2e2; color: #991b1b; }
   .canvas-wrap {
     position: relative;
-    width: min(100%, 900px, calc((100dvh - 220px) * 16 / 7));
+    width: min(100%, 1060px, calc((100dvh - 184px) * 16 / 7));
     aspect-ratio: 16 / 7;
-    max-height: calc(100dvh - 220px);
+    max-height: calc(100dvh - 184px);
     border: 1px solid rgba(148, 163, 184, 0.45);
     border-radius: 14px;
     overflow: hidden;
@@ -174,7 +174,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px;
-    width: min(100%, 900px);
+    width: min(100%, 1060px);
   }
   .btn-primary,
   .btn-secondary {
@@ -209,12 +209,12 @@ import GameLayout from '../../layouts/GameLayout.astro';
   .btn-secondary:hover { background: #f1f5f9; }
   @media (max-width: 720px) {
     .dino-wrapper { padding: 50px 8px 10px; }
-    .hud { width: min(100%, 700px); }
+    .hud { width: min(100%, 760px); }
     .canvas-wrap {
       width: min(100%, calc((100dvh - 260px) * 16 / 7));
       max-height: calc(100dvh - 260px);
     }
-    .controls-row { width: min(100%, 700px); }
+    .controls-row { width: min(100%, 760px); }
   }
   @media (max-width: 520px) {
     .canvas-wrap {
