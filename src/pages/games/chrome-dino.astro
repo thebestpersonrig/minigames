@@ -58,10 +58,11 @@ import GameLayout from '../../layouts/GameLayout.astro';
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 100dvh;
     padding: clamp(54px, 9vh, 76px) clamp(10px, 3vw, 24px) clamp(12px, 3vh, 28px);
     box-sizing: border-box;
+    gap: clamp(10px, 2vh, 18px);
   }
   .settings-screen,
   .game-screen {
@@ -73,7 +74,10 @@ import GameLayout from '../../layouts/GameLayout.astro';
   .settings-screen.active,
   .game-screen.active { display: flex; }
   .settings-screen { gap: 20px; max-width: 400px; }
-  .game-screen { gap: clamp(8px, 1.6vh, 14px); }
+  .game-screen {
+    gap: clamp(8px, 1.6vh, 14px);
+    max-width: min(980px, 100%);
+  }
   .game-title {
     margin: 0;
     font-size: clamp(1.9rem, 5vw, 2.8rem);
@@ -130,9 +134,9 @@ import GameLayout from '../../layouts/GameLayout.astro';
   .diff-badge.hard { background: #fee2e2; color: #991b1b; }
   .canvas-wrap {
     position: relative;
-    width: min(100%, 900px);
+    width: min(100%, 900px, calc((100dvh - 220px) * 16 / 7));
     aspect-ratio: 16 / 7;
-    max-height: calc(100dvh - 180px);
+    max-height: calc(100dvh - 220px);
     border: 1px solid rgba(148, 163, 184, 0.45);
     border-radius: 14px;
     overflow: hidden;
@@ -143,6 +147,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
     display: block;
     width: 100%;
     height: 100%;
+    touch-action: manipulation;
   }
   .overlay {
     position: absolute;
@@ -169,6 +174,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px;
+    width: min(100%, 900px);
   }
   .btn-primary,
   .btn-secondary {
@@ -194,28 +200,46 @@ import GameLayout from '../../layouts/GameLayout.astro';
     color: #1e293b;
     border: 1px solid #cbd5e1;
     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    touch-action: manipulation;
+    user-select: none;
   }
   .btn-primary:hover,
   .btn-secondary:hover { transform: translateY(-1px); }
   .btn-primary:hover { background: #1d4ed8; }
   .btn-secondary:hover { background: #f1f5f9; }
+  @media (max-width: 720px) {
+    .dino-wrapper { padding: 50px 8px 10px; }
+    .hud { width: min(100%, 700px); }
+    .canvas-wrap {
+      width: min(100%, calc((100dvh - 260px) * 16 / 7));
+      max-height: calc(100dvh - 260px);
+    }
+    .controls-row { width: min(100%, 700px); }
+  }
   @media (max-width: 520px) {
     .canvas-wrap {
-      aspect-ratio: 4 / 3;
-      max-height: calc(100dvh - 220px);
+      width: min(100%, calc((100dvh - 296px) * 5 / 3));
+      aspect-ratio: 5 / 3;
+      max-height: calc(100dvh - 296px);
     }
-    .controls-row { width: 100%; }
-    .btn-secondary { flex: 1 1 92px; padding-inline: 12px; }
+    .controls-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .btn-secondary { padding-inline: 12px; }
   }
   @media (orientation: landscape) and (max-height: 500px) {
-    .dino-wrapper { padding: 48px 10px 8px; }
+    .dino-wrapper { padding: 42px 8px 6px; }
     .game-screen { gap: 6px; }
     .canvas-wrap {
-      width: min(78vw, calc((100dvh - 112px) * 16 / 7));
-      max-height: calc(100dvh - 112px);
+      width: min(100%, calc((100dvh - 130px) * 16 / 7));
+      max-height: calc(100dvh - 130px);
     }
+    .hud { font-size: 0.72rem; padding: 4px 12px; }
     .controls-row { gap: 6px; }
-    .btn-secondary { min-height: 36px; padding: 6px 14px; }
+    .btn-secondary { min-height: 34px; padding: 6px 12px; }
   }
 </style>
 
@@ -238,9 +262,9 @@ import GameLayout from '../../layouts/GameLayout.astro';
   var ctx = canvas.getContext('2d');
 
   var DIFFICULTIES = {
-    easy: { speed: 5.5, gravity: 0.58, gap: 1220 },
-    medium: { speed: 7.0, gravity: 0.66, gap: 1000 },
-    hard: { speed: 8.8, gravity: 0.76, gap: 830 }
+    easy: { speed: 5.4, gravity: 0.58, gap: 1220, jump: 9.3, birdChance: 0.16, doubleChance: 0.24, tripleChance: 0.05 },
+    medium: { speed: 6.9, gravity: 0.66, gap: 1000, jump: 9.9, birdChance: 0.22, doubleChance: 0.32, tripleChance: 0.10 },
+    hard: { speed: 8.7, gravity: 0.76, gap: 830, jump: 10.5, birdChance: 0.28, doubleChance: 0.40, tripleChance: 0.16 }
   };
   var LS_BEST = 'chrome_dino_best';
   var LS_DIFF = 'chrome_dino_diff';
@@ -255,10 +279,15 @@ import GameLayout from '../../layouts/GameLayout.astro';
   var obstacles;
   var clouds;
   var score;
+  var scoreDisplay;
   var best;
   var speed;
   var gravity;
+  var jumpImpulse;
   var minGap;
+  var birdChance;
+  var doubleChance;
+  var tripleChance;
   var ducking = false;
 
   function initCanvas() {
@@ -281,10 +310,15 @@ import GameLayout from '../../layouts/GameLayout.astro';
     best = parseInt(localStorage.getItem(LS_BEST) || '0', 10);
     bestEl.textContent = best;
     score = 0;
+    scoreDisplay = 0;
     scoreEl.textContent = '0';
     speed = cfg.speed;
     gravity = cfg.gravity;
+    jumpImpulse = cfg.jump;
     minGap = cfg.gap;
+    birdChance = cfg.birdChance;
+    doubleChance = cfg.doubleChance;
+    tripleChance = cfg.tripleChance;
     spawnTimer = 500;
     obstacles = [];
     clouds = [
@@ -320,11 +354,14 @@ import GameLayout from '../../layouts/GameLayout.astro';
     speed += 0.0015 * dt;
     score += dt * 0.01;
     var displayScore = Math.floor(score);
-    scoreEl.textContent = displayScore;
-    if (displayScore > best) {
-      best = displayScore;
-      bestEl.textContent = best;
-      localStorage.setItem(LS_BEST, String(best));
+    if (displayScore !== scoreDisplay) {
+      scoreDisplay = displayScore;
+      scoreEl.textContent = displayScore;
+      if (displayScore > best) {
+        best = displayScore;
+        bestEl.textContent = best;
+        localStorage.setItem(LS_BEST, String(best));
+      }
     }
 
     dino.vy += gravity * scale;
@@ -340,9 +377,8 @@ import GameLayout from '../../layouts/GameLayout.astro';
 
     spawnTimer -= dt;
     if (spawnTimer <= 0) {
-      spawnObstacle();
-      spawnTimer = minGap + Math.random() * minGap * 0.55 - speed * 35;
-      spawnTimer = Math.max(560, spawnTimer);
+      var clusterSize = spawnObstacleCluster();
+      spawnTimer = nextSpawnDelay(clusterSize);
     }
 
     obstacles.forEach(function (obs) { obs.x -= speed * scale; });
@@ -364,33 +400,81 @@ import GameLayout from '../../layouts/GameLayout.astro';
     }
   }
 
-  function spawnObstacle() {
-    var bird = score > 120 && Math.random() < 0.26;
-    if (bird) {
-      var high = Math.random() < 0.5;
-      obstacles.push({
+  function nextSpawnDelay(clusterSize) {
+    var speedPenalty = speed * 30;
+    var clusterPad = (clusterSize - 1) * 170;
+    var randomPart = minGap * (0.3 + Math.random() * 0.55);
+    return Math.max(460, randomPart + clusterPad - speedPenalty);
+  }
+
+  function pickClusterSize() {
+    var clusterSize = 1;
+    var roll = Math.random();
+    if (score > 240 && roll < tripleChance) {
+      clusterSize = 3;
+    } else if (score > 70 && roll < doubleChance) {
+      clusterSize = 2;
+    }
+    return clusterSize;
+  }
+
+  function spawnObstacleCluster() {
+    var clusterSize = pickClusterSize();
+    var nextX = W + 20;
+    for (var i = 0; i < clusterSize; i++) {
+      var obstacle = createObstacle(nextX, i, clusterSize);
+      obstacles.push(obstacle);
+      if (i < clusterSize - 1) {
+        nextX += obstacle.w + intraClusterGap(obstacle.type);
+      }
+    }
+    return clusterSize;
+  }
+
+  function createObstacle(x, index, clusterSize) {
+    var birdAllowed = score > 120 && (clusterSize === 1 || index === clusterSize - 1);
+    if (birdAllowed && Math.random() < birdChance) {
+      var lane = Math.random();
+      var birdY;
+      if (lane < 0.34) birdY = groundY - 90;
+      else if (lane < 0.68) birdY = groundY - 72;
+      else birdY = groundY - 58;
+      return {
         type: 'bird',
-        x: W + 20,
-        y: high ? groundY - 86 : groundY - 58,
+        x: x,
+        y: birdY,
         w: 44,
         h: 24
-      });
-      return;
+      };
     }
-    var tall = Math.random() < 0.42;
-    obstacles.push({
+
+    var shape = Math.random();
+    var cactus;
+    if (shape < 0.34) cactus = { w: 20, h: 40 };
+    else if (shape < 0.68) cactus = { w: 24, h: 48 };
+    else if (shape < 0.86) cactus = { w: 27, h: 56 };
+    else cactus = { w: 34, h: 44 };
+
+    return {
       type: 'cactus',
-      x: W + 20,
-      y: groundY - (tall ? 54 : 42),
-      w: tall ? 26 : 22,
-      h: tall ? 54 : 42
-    });
+      x: x,
+      y: groundY - cactus.h,
+      w: cactus.w,
+      h: cactus.h
+    };
+  }
+
+  function intraClusterGap(type) {
+    if (type === 'bird') {
+      return 70 + Math.random() * 48;
+    }
+    return 56 + Math.random() * 58;
   }
 
   function jump() {
     if (!gameRunning) return;
     if (dino.grounded) {
-      dino.vy = -Math.max(11.5, H * 0.044);
+      dino.vy = -Math.max(jumpImpulse, H * 0.034);
       dino.grounded = false;
     }
   }
@@ -436,7 +520,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
     ctx.lineTo(W, groundY + 1);
     ctx.stroke();
     ctx.fillStyle = '#94a3b8';
-    for (var x = -((score * speed) % 90); x < W; x += 90) {
+    for (var x = -((scoreDisplay * speed) % 90); x < W; x += 90) {
       ctx.fillRect(x + 16, groundY + 16, 34, 3);
       ctx.fillRect(x + 62, groundY + 28, 18, 3);
     }
@@ -485,7 +569,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
     if (obs.type === 'bird') {
       ctx.fillStyle = '#475569';
       roundedRect(obs.x + 10, obs.y + 6, 24, 14, 5);
-      var flap = Math.sin(score * 0.25) > 0 ? -8 : 8;
+      var flap = Math.sin(scoreDisplay * 0.25) > 0 ? -8 : 8;
       ctx.beginPath();
       ctx.moveTo(obs.x + 20, obs.y + 12);
       ctx.lineTo(obs.x, obs.y + 12 + flap);
@@ -537,6 +621,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
   jumpBtn.addEventListener('click', jump);
   duckBtn.addEventListener('pointerdown', function (e) { e.preventDefault(); setDucking(true); });
   duckBtn.addEventListener('pointerup', function () { setDucking(false); });
+  duckBtn.addEventListener('pointercancel', function () { setDucking(false); });
   duckBtn.addEventListener('pointerleave', function () { setDucking(false); });
   canvas.addEventListener('pointerdown', function () { jump(); });
   document.addEventListener('keydown', function (e) {
@@ -560,10 +645,31 @@ import GameLayout from '../../layouts/GameLayout.astro';
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
       if (gameScreen.classList.contains('active')) {
+        var prevW = W || canvas.width;
+        var prevH = H || canvas.height;
         initCanvas();
+        if (prevW && prevH && dino) {
+          var scaleX = W / prevW;
+          var scaleY = H / prevH;
+          dino.x *= scaleX;
+          dino.y = (groundY - dino.h);
+          obstacles.forEach(function (obs) {
+            obs.x *= scaleX;
+            obs.y *= scaleY;
+          });
+          clouds.forEach(function (cloud) {
+            cloud.x *= scaleX;
+            cloud.y *= scaleY;
+          });
+        }
         draw();
       }
     }, 120);
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible') {
+      setDucking(false);
+    }
   });
   var savedDiff = localStorage.getItem(LS_DIFF);
   if (savedDiff && DIFFICULTIES[savedDiff]) diffSel.value = savedDiff;
