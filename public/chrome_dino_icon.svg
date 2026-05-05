@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Chrome Dino icon">
+  <rect width="128" height="128" rx="24" fill="#f8fafc"/>
+  <path d="M16 94h96" stroke="#94a3b8" stroke-width="6" stroke-linecap="round"/>
+  <path d="M92 44h14v10H92zm-42 2h31c7 0 13 6 13 13v8h11v12H91v10H78V78H55v11H42V72H32V59c0-7 8-13 18-13z" fill="#334155"/>
+  <path d="M54 46V34h28v12" fill="#334155"/>
+  <rect x="78" y="40" width="5" height="5" fill="#f8fafc"/>
+  <path d="M27 93V72m0 0-8 8m8-8 8 8M108 93V68m0 0-9 9m9-9 9 9" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
