@@ -1,0 +1,651 @@
+---
+import GameLayout from '../../layouts/GameLayout.astro';
+---
+<GameLayout title="Frogger">
+  <div class="frog-wrapper">
+
+    <!-- ── Settings ── -->
+    <div class="settings-screen active" id="settings-screen">
+      <h1 class="game-title">Frogger</h1>
+      <div class="settings-form">
+        <label class="field">
+          <span>Difficulty</span>
+          <select id="difficulty-select">
+            <option value="easy">Easy — slow traffic</option>
+            <option value="medium" selected>Medium — standard</option>
+            <option value="hard">Hard — fast traffic</option>
+          </select>
+        </label>
+      </div>
+      <button class="btn-primary" id="start-btn">Start Game</button>
+    </div>
+
+    <!-- ── Game ── -->
+    <div class="game-screen" id="game-screen">
+      <div class="hud">
+        <span class="hud-item">Score: <strong id="score-val">0</strong></span>
+        <span class="hud-item">Best: <strong id="best-val">0</strong></span>
+        <span class="hud-item">Lives: <strong id="lives-val">🐸🐸🐸</strong></span>
+        <span class="hud-item diff-badge" id="diff-badge"></span>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="frog-canvas" aria-label="Frogger game"></canvas>
+        <div class="overlay" id="overlay" hidden>
+          <p id="overlay-msg"></p>
+          <button class="btn-secondary" id="overlay-btn">Play Again</button>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <button class="btn-secondary" id="pause-btn">Pause</button>
+        <button class="btn-secondary" id="settings-btn">Settings</button>
+      </div>
+
+      <div class="dpad" id="dpad">
+        <button class="dpad-btn" data-dir="up"    aria-label="Up">▲</button>
+        <button class="dpad-btn" data-dir="left"  aria-label="Left">◀</button>
+        <button class="dpad-btn" data-dir="down"  aria-label="Down">▼</button>
+        <button class="dpad-btn" data-dir="right" aria-label="Right">▶</button>
+      </div>
+    </div>
+
+  </div>
+</GameLayout>
+
+<style is:global>
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background:
+      radial-gradient(circle at top left,  rgba(74,222,128,0.15), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(34,197,94,0.10), transparent 22%),
+      linear-gradient(135deg, #14532d, #052e16);
+    min-height: 100dvh;
+    color: #fff;
+  }
+</style>
+
+<style>
+  .frog-wrapper {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100dvh;
+    padding: clamp(50px,8vh,76px) clamp(10px,3vw,24px) clamp(12px,3vh,28px);
+    box-sizing: border-box;
+  }
+
+  .settings-screen {
+    display: none; flex-direction: column; align-items: center;
+    gap: 20px; width: 100%; max-width: 400px;
+  }
+  .settings-screen.active { display: flex; }
+  .game-title {
+    margin: 0; font-size: clamp(1.8rem,5vw,2.6rem);
+    text-align: center; text-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  }
+  .settings-form { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; color: rgba(255,255,255,0.8); }
+  select {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 10px; color: #fff; padding: 10px 12px;
+    font-size: 1rem; font-family: inherit; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+  }
+  select option { background: #14532d; color: #fff; }
+
+  .game-screen {
+    display: none; flex-direction: column; align-items: center;
+    gap: clamp(6px,1.4vh,12px); width: 100%;
+  }
+  .game-screen.active { display: flex; }
+
+  .hud {
+    display: flex; gap: clamp(10px,2.5vw,22px); align-items: center;
+    flex-wrap: wrap; justify-content: center;
+    font-size: clamp(0.78rem,2.2vw,0.92rem);
+    background: rgba(0,0,0,0.3); padding: 5px 16px; border-radius: 999px;
+  }
+  .diff-badge {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
+    padding: 2px 8px; border-radius: 999px; text-transform: uppercase;
+  }
+  .diff-badge.easy   { background: #22c55e33; color: #4ade80; }
+  .diff-badge.medium { background: #f59e0b33; color: #fbbf24; }
+  .diff-badge.hard   { background: #ef444433; color: #f87171; }
+
+  .canvas-wrap {
+    position: relative;
+    width: min(100vw - 20px, 520px);
+    aspect-ratio: 1;
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  @media (pointer: coarse) {
+    .canvas-wrap {
+      width: min(100vw - 20px, calc(100dvh - 270px));
+    }
+  }
+  #frog-canvas { display: block; width: 100%; height: 100%; }
+
+  .overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.68);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 16px; border-radius: 14px;
+  }
+  .overlay[hidden] { display: none; }
+  #overlay-msg {
+    margin: 0; font-size: clamp(1rem,4vw,1.4rem);
+    font-weight: 700; text-align: center; padding: 0 16px; white-space: pre-line;
+  }
+
+  .controls-row { display: flex; gap: 12px; }
+
+  /* D-pad: hidden on mouse, visible on touch */
+  .dpad { display: none; }
+  @media (pointer: coarse) {
+    .dpad {
+      display: grid;
+      grid-template-areas: ". up ." "left . right" ". down .";
+      grid-template-columns: repeat(3, clamp(52px,14vw,70px));
+      grid-template-rows:    repeat(3, clamp(52px,14vw,70px));
+      gap: 5px;
+    }
+  }
+  .dpad-btn {
+    background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 12px; color: #fff; font-size: clamp(1.1rem,3.2vw,1.4rem);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent; user-select: none;
+    touch-action: manipulation; transition: background 0.1s;
+  }
+  .dpad-btn:active { background: rgba(255,255,255,0.34); transform: scale(0.94); }
+  .dpad-btn[data-dir="up"]    { grid-area: up; }
+  .dpad-btn[data-dir="left"]  { grid-area: left; }
+  .dpad-btn[data-dir="down"]  { grid-area: down; }
+  .dpad-btn[data-dir="right"] { grid-area: right; }
+
+  .btn-primary, .btn-secondary {
+    border: none; border-radius: 12px; font-family: inherit; font-weight: 600;
+    cursor: pointer; transition: transform 0.15s, background 0.15s;
+    -webkit-tap-highlight-color: transparent; min-height: 44px;
+  }
+  .btn-primary {
+    background: #4ade80; color: #052e16;
+    font-size: 1.05rem; padding: 12px 28px; width: 100%;
+  }
+  .btn-primary:hover { transform: translateY(-2px); background: #22c55e; }
+  .btn-secondary {
+    background: rgba(255,255,255,0.14); color: #fff;
+    font-size: 0.9rem; padding: 10px 22px; border: 1px solid rgba(255,255,255,0.2);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.25); }
+
+  @media (orientation: landscape) and (max-height: 500px) {
+    .frog-wrapper { flex-direction: row; padding: 8px 12px 8px clamp(44px,10vw,60px); gap: 12px; }
+    .game-screen  { flex-direction: row; align-items: center; gap: 12px; }
+    .canvas-wrap  { width: min(calc(100dvh - 60px), 480px); }
+    .dpad         { display: none; }
+  }
+</style>
+
+<script is:inline>
+(function () {
+  /* ── DOM ── */
+  const settingsScreen = document.getElementById('settings-screen');
+  const gameScreen     = document.getElementById('game-screen');
+  const startBtn       = document.getElementById('start-btn');
+  const settingsBtn    = document.getElementById('settings-btn');
+  const pauseBtn       = document.getElementById('pause-btn');
+  const overlay        = document.getElementById('overlay');
+  const overlayMsg     = document.getElementById('overlay-msg');
+  const overlayBtn     = document.getElementById('overlay-btn');
+  const scoreEl        = document.getElementById('score-val');
+  const bestEl         = document.getElementById('best-val');
+  const livesEl        = document.getElementById('lives-val');
+  const diffBadge      = document.getElementById('diff-badge');
+  const canvas         = document.getElementById('frog-canvas');
+  const ctx            = canvas.getContext('2d');
+  const diffSel        = document.getElementById('difficulty-select');
+
+  /* ── Grid ── */
+  const ROWS = 14; // rows 0-13, top to bottom
+  // 0: home (lily pads), 1-5: river, 6: median, 7-12: road, 13: start
+  let W, H, CW, CH;
+
+  const SPEED_MULT = { easy: 0.65, medium: 1.0, hard: 1.6 };
+
+  /* ── State ── */
+  let diff, speedM, lanes, frog, homePads, homeOccupied;
+  let score, best, lives, level;
+  let deathTimer, paused, gameOver, raf;
+  let moveCooldown = 0;
+  const dirHeld = { up: false, down: false, left: false, right: false };
+
+  best = parseInt(localStorage.getItem('frogger-best') || '0', 10);
+  bestEl.textContent = best;
+
+  /* ── Canvas ── */
+  function initCanvas() {
+    W = canvas.parentElement.clientWidth;
+    H = canvas.parentElement.clientHeight;
+    canvas.width = W; canvas.height = H;
+    CW = W / 13; CH = H / ROWS;
+  }
+
+  /* ── Lane definitions ── */
+  /*
+    Row 0:  home (lily pads + water)
+    Row 1-5: river
+    Row 6:  median (safe)
+    Row 7-12: road
+    Row 13: start (safe)
+  */
+  function buildLanes() {
+    const m = speedM;
+    return [
+      null,                                                                  // 0: home
+      { t:'river', dir: 1, spd:1.1*m, color:'#6b3a1f', objs: [{x:0.05*W,c:3},{x:0.42*W,c:4},{x:0.75*W,c:3}] },
+      { t:'river', dir:-1, spd:0.85*m,color:'#2d6a4f', objs: [{x:0.12*W,c:2},{x:0.42*W,c:3},{x:0.72*W,c:2}] },
+      { t:'river', dir: 1, spd:1.55*m,color:'#6b3a1f', objs: [{x:0.0 *W,c:5},{x:0.58*W,c:4}] },
+      { t:'river', dir:-1, spd:0.95*m,color:'#2d6a4f', objs: [{x:0.18*W,c:3},{x:0.55*W,c:3},{x:0.88*W,c:2}] },
+      { t:'river', dir: 1, spd:1.3*m, color:'#6b3a1f', objs: [{x:0.08*W,c:3},{x:0.44*W,c:2},{x:0.72*W,c:3}] },
+      null,                                                                  // 6: median
+      { t:'road',  dir: 1, spd:1.6*m, color:'#ef4444', objs: [{x:0.0 *W,c:2},{x:0.45*W,c:1},{x:0.72*W,c:2}] },
+      { t:'road',  dir:-1, spd:2.4*m, color:'#f97316', objs: [{x:0.5 *W,c:1},{x:0.8 *W,c:2},{x:0.12*W,c:1}] },
+      { t:'road',  dir: 1, spd:1.9*m, color:'#fbbf24', objs: [{x:0.2 *W,c:2},{x:0.62*W,c:2}] },
+      { t:'road',  dir:-1, spd:2.9*m, color:'#a3e635', objs: [{x:0.0 *W,c:1},{x:0.3 *W,c:2},{x:0.62*W,c:1},{x:0.85*W,c:1}] },
+      { t:'road',  dir: 1, spd:1.3*m, color:'#38bdf8', objs: [{x:0.1 *W,c:3},{x:0.55*W,c:2},{x:0.82*W,c:2}] },
+      { t:'road',  dir:-1, spd:2.1*m, color:'#c084fc', objs: [{x:0.25*W,c:2},{x:0.6 *W,c:1},{x:0.85*W,c:2}] },
+      null,                                                                  // 13: start
+    ];
+  }
+
+  function buildHomePads() {
+    homePads = [];
+    for (let i = 0; i < 5; i++) homePads.push({ cx: (i * 2 + 1) * (W / 10) });
+    homeOccupied = new Array(5).fill(false);
+  }
+
+  /* ── Start ── */
+  function startGame() {
+    initCanvas();
+    speedM = SPEED_MULT[diffSel.value];
+    diff = diffSel.value;
+    score = 0; lives = 3; level = 1;
+    scoreEl.textContent = '0';
+    livesEl.textContent = '🐸🐸🐸';
+    overlay.hidden = true;
+    pauseBtn.textContent = 'Pause';
+    diffBadge.textContent = diff;
+    diffBadge.className = `hud-item diff-badge ${diff}`;
+
+    lanes = buildLanes();
+    buildHomePads();
+    resetFrog();
+    deathTimer = 0;
+    paused = false; gameOver = false;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(gameLoop);
+  }
+
+  function resetFrog() {
+    frog = {
+      x: W / 2, y: 13.5 * CH,
+      row: 13, alive: true,
+      dir: 0,         // 0=up 1=right 2=down 3=left
+      hopAnim: 0,     // 0-8 hop arc frames
+    };
+    moveCooldown = 0;
+  }
+
+  /* ── Game loop ── */
+  function gameLoop() {
+    if (paused || gameOver) return;
+
+    if (!frog.alive) {
+      deathTimer--;
+      if (deathTimer <= 0) {
+        if (lives <= 0) { endGame(); return; }
+        resetFrog();
+      }
+      draw(); raf = requestAnimationFrame(gameLoop); return;
+    }
+
+    moveCooldown = Math.max(0, moveCooldown - 1);
+    handleInput();
+    updateLanes();
+    updateFrog();
+    draw();
+    raf = requestAnimationFrame(gameLoop);
+  }
+
+  function handleInput() {
+    if (moveCooldown > 0) return;
+    if (dirHeld.up)    { moveFrog('up');    moveCooldown = 9; }
+    else if (dirHeld.down)  { moveFrog('down');  moveCooldown = 9; }
+    else if (dirHeld.left)  { moveFrog('left');  moveCooldown = 9; }
+    else if (dirHeld.right) { moveFrog('right'); moveCooldown = 9; }
+  }
+
+  function moveFrog(dir) {
+    const prevRow = frog.row;
+    switch (dir) {
+      case 'up':    if (frog.row > 0)  { frog.y -= CH; frog.row--; frog.dir = 0; } break;
+      case 'down':  if (frog.row < 13) { frog.y += CH; frog.row++; frog.dir = 2; } return;
+      case 'left':  frog.x -= CW; frog.dir = 3; break;
+      case 'right': frog.x += CW; frog.dir = 1; break;
+    }
+    if (dir === 'up' && frog.row < prevRow) addScore(10);
+    frog.hopAnim = 8;
+
+    /* clamp x only in safe zones */
+    const r = frog.row;
+    if (r === 6 || r === 13) frog.x = Math.max(CW*0.5, Math.min(W - CW*0.5, frog.x));
+    if (r >= 7 && r <= 12)   frog.x = Math.max(CW*0.5, Math.min(W - CW*0.5, frog.x));
+  }
+
+  function updateLanes() {
+    for (let r = 0; r < ROWS; r++) {
+      const lane = lanes[r];
+      if (!lane) continue;
+      for (const obj of lane.objs) {
+        const objW = obj.c * CW;
+        obj.x += lane.spd * lane.dir;
+        if (lane.dir > 0 && obj.x > W)       obj.x = -objW;
+        if (lane.dir < 0 && obj.x + objW < 0) obj.x = W;
+      }
+    }
+  }
+
+  function updateFrog() {
+    if (frog.hopAnim > 0) frog.hopAnim--;
+    const r = frog.row;
+
+    if (r >= 1 && r <= 5) {
+      /* river */
+      const lane = lanes[r];
+      const log = getObjAt(lane, frog.x);
+      if (log) {
+        frog.x += lane.spd * lane.dir;
+        if (frog.x < 0 || frog.x > W) killFrog();
+      } else {
+        killFrog(); // fell in water
+      }
+      return;
+    }
+    if (r >= 7 && r <= 12) {
+      /* road */
+      const lane = lanes[r];
+      if (lane && getObjAt(lane, frog.x)) killFrog();
+      return;
+    }
+    if (r === 0) {
+      /* home row */
+      const padIdx = homePads.findIndex(p => Math.abs(frog.x - p.cx) < CW * 0.72);
+      if (padIdx >= 0 && !homeOccupied[padIdx]) {
+        homeOccupied[padIdx] = true;
+        addScore(50);
+        if (homeOccupied.every(Boolean)) {
+          addScore(1000);
+          level++;
+          homeOccupied.fill(false);
+          speedM = Math.min(speedM * 1.12, SPEED_MULT[diff] * 2.0);
+          lanes = buildLanes();
+        }
+        resetFrog();
+      } else {
+        killFrog(); // water gap or already occupied
+      }
+    }
+  }
+
+  function getObjAt(lane, fx) {
+    for (const obj of lane.objs) {
+      const objW = obj.c * CW;
+      if (fx > obj.x + 4 && fx < obj.x + objW - 4) return obj;
+    }
+    return null;
+  }
+
+  function killFrog() {
+    frog.alive = false;
+    lives--;
+    livesEl.textContent = '🐸'.repeat(Math.max(0, lives));
+    deathTimer = 55;
+  }
+
+  function addScore(pts) {
+    score += pts; scoreEl.textContent = score;
+    if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('frogger-best', best); }
+  }
+
+  function endGame() {
+    gameOver = true; cancelAnimationFrame(raf);
+    overlayMsg.textContent = `Game Over!\nScore: ${score}  Level: ${level}`;
+    overlay.hidden = false;
+  }
+
+  /* ── Draw ── */
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    /* row backgrounds */
+    for (let r = 0; r < ROWS; r++) {
+      const y = r * CH;
+      if (r === 0)               ctx.fillStyle = '#1e3a5f'; // home water
+      else if (r <= 5)           ctx.fillStyle = '#1d4ed8'; // river
+      else if (r === 6)          ctx.fillStyle = '#292524'; // median
+      else if (r >= 7 && r <= 12) ctx.fillStyle = '#1c1917'; // road
+      else                        ctx.fillStyle = '#14532d'; // start
+      ctx.fillRect(0, y, W, CH);
+    }
+
+    /* road lane markings */
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+    ctx.setLineDash([CW * 0.6, CW * 0.4]);
+    for (let r = 7; r <= 12; r++) {
+      const y = r * CH + CH / 2;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    /* river wave shimmer */
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+    for (let r = 0; r <= 5; r++) {
+      const y = r * CH + CH * 0.65;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    /* home row: lily pads */
+    homePads.forEach((p, i) => {
+      ctx.fillStyle = homeOccupied[i] ? '#15803d' : '#166534';
+      ctx.beginPath(); ctx.ellipse(p.cx, CH * 0.5, CW * 0.7, CH * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(p.cx, CH * 0.5, CW * 0.7, CH * 0.4, 0, 0, Math.PI * 2); ctx.stroke();
+      if (homeOccupied[i]) {
+        /* small frog silhouette on occupied pad */
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath(); ctx.arc(p.cx, CH * 0.45, CW * 0.22, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+
+    /* lane objects (logs / cars) */
+    for (let r = 1; r < ROWS; r++) {
+      const lane = lanes[r];
+      if (!lane) continue;
+      for (const obj of lane.objs) {
+        const objW = obj.c * CW - 3;
+        const objH = CH * 0.72;
+        const ox = obj.x, oy = r * CH + CH * 0.14;
+        if (lane.t === 'river') drawLog(ox, oy, objW, objH, obj.c, lane.dir);
+        else                    drawCar(ox, oy, objW, objH, obj.c, lane.color, lane.dir);
+      }
+    }
+
+    /* frog */
+    if (frog.alive) {
+      drawFrog(frog.x, frog.y - CH * 0.1, frog.dir, frog.hopAnim);
+    } else if (deathTimer > 0) {
+      drawDeadFrog(frog.x, frog.y - CH * 0.1, deathTimer);
+    }
+
+    /* level badge */
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.font = `bold ${Math.floor(CH * 0.42)}px "Segoe UI",sans-serif`;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText(`LVL ${level}`, W - 6, H - 4);
+    ctx.textAlign = 'left';
+  }
+
+  function drawLog(x, y, w, h, cells, dir) {
+    /* bark */
+    const r = Math.min(h / 2, 6);
+    ctx.fillStyle = '#92400e';
+    rrect(x, y, w, h, r); ctx.fill();
+    /* grain lines */
+    ctx.strokeStyle = '#78350f'; ctx.lineWidth = 1.5;
+    for (let i = 1; i < cells; i++) {
+      const lx = x + i * CW - 2;
+      ctx.beginPath(); ctx.moveTo(lx, y + 3); ctx.lineTo(lx, y + h - 3); ctx.stroke();
+    }
+    /* highlight */
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    rrect(x + 2, y + 2, w - 4, h * 0.3, 3); ctx.fill();
+  }
+
+  function drawCar(x, y, w, h, cells, color, dir) {
+    const r = Math.min(h / 2, 5);
+    ctx.fillStyle = color;
+    rrect(x, y, w, h, r); ctx.fill();
+    /* windshield */
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    const ws = w * 0.28, wsy = h * 0.18;
+    if (dir > 0) rrect(x + w - ws - w*0.1, y + wsy, ws, h * 0.55, 3);
+    else         rrect(x + w*0.1, y + wsy, ws, h * 0.55, 3);
+    ctx.fill();
+    /* headlights */
+    ctx.fillStyle = '#fef9c3';
+    const hl = h * 0.22, hly = y + h * 0.3;
+    if (dir > 0) {
+      ctx.fillRect(x + w - 4, hly,       3, hl);
+      ctx.fillRect(x + w - 4, hly + h*0.35, 3, hl * 0.7);
+    } else {
+      ctx.fillRect(x + 1,     hly,       3, hl);
+      ctx.fillRect(x + 1,     hly + h*0.35, 3, hl * 0.7);
+    }
+  }
+
+  function drawFrog(cx, cy, dir, hop) {
+    const fw = CW * 0.72, fh = CH * 0.72;
+    const arc = hop > 0 ? Math.sin((hop / 8) * Math.PI) * CH * 0.18 : 0;
+    const fy = cy - arc;
+    ctx.fillStyle = '#4ade80';
+
+    /* body */
+    ctx.beginPath();
+    ctx.ellipse(cx, fy, fw * 0.42, fh * 0.36, 0, 0, Math.PI * 2);
+    ctx.fill();
+    /* belly */
+    ctx.fillStyle = '#86efac';
+    ctx.beginPath();
+    ctx.ellipse(cx, fy + fh * 0.06, fw * 0.26, fh * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    /* legs (direction-based) */
+    ctx.fillStyle = '#4ade80';
+    const legSpread = hop > 0 ? 0.85 : 0.6;
+    /* front legs */
+    const fl = [{ dx: -1, dy: -1 }, { dx: 1, dy: -1 }];
+    /* back legs */
+    const bl = [{ dx: -1, dy: 1  }, { dx: 1, dy: 1  }];
+    [...fl, ...bl].forEach(l => {
+      ctx.beginPath();
+      ctx.moveTo(cx, fy);
+      ctx.lineTo(cx + l.dx * fw * legSpread, fy + l.dy * fh * (legSpread * 0.6));
+      ctx.lineTo(cx + l.dx * fw * (legSpread + 0.25), fy + l.dy * fh * (legSpread * 0.9));
+      ctx.lineWidth = CH * 0.13; ctx.strokeStyle = '#4ade80';
+      ctx.lineCap = 'round'; ctx.stroke();
+    });
+
+    /* eyes */
+    const edir = [[0,-1],[1,0],[0,1],[-1,0]][dir];
+    [[-1,0],[1,0]].forEach(([ex]) => {
+      const eyeX = cx + ex * fw * 0.32 + edir[0] * fw * 0.08;
+      const eyeY = fy - fh * 0.2 + edir[1] * fh * 0.06;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(eyeX, eyeY, fh * 0.14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.beginPath(); ctx.arc(eyeX + edir[0] * 1.5, eyeY + edir[1] * 1.5, fh * 0.07, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+
+  function drawDeadFrog(cx, cy, timer) {
+    const alpha = Math.min(1, timer / 20);
+    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#f87171';
+    ctx.font = `${Math.floor(CH * 0.8)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('✕', cx, cy);
+    ctx.restore();
+  }
+
+  function rrect(x, y, w, h, r) {
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+  }
+
+  /* ── Pause / end ── */
+  function togglePause() {
+    if (gameOver) return;
+    paused = !paused;
+    pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+    if (!paused) raf = requestAnimationFrame(gameLoop);
+  }
+
+  /* ── Input ── */
+  document.addEventListener('keydown', e => {
+    if (!gameScreen.classList.contains('active')) return;
+    switch (e.key) {
+      case 'ArrowUp':    case 'w': e.preventDefault(); dirHeld.up    = true; break;
+      case 'ArrowDown':  case 's': e.preventDefault(); dirHeld.down  = true; break;
+      case 'ArrowLeft':  case 'a': e.preventDefault(); dirHeld.left  = true; break;
+      case 'ArrowRight': case 'd': e.preventDefault(); dirHeld.right = true; break;
+      case 'p': case 'P': togglePause(); break;
+    }
+  });
+  document.addEventListener('keyup', e => {
+    switch (e.key) {
+      case 'ArrowUp':    case 'w': dirHeld.up    = false; break;
+      case 'ArrowDown':  case 's': dirHeld.down  = false; break;
+      case 'ArrowLeft':  case 'a': dirHeld.left  = false; break;
+      case 'ArrowRight': case 'd': dirHeld.right = false; break;
+    }
+  });
+
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
+    btn.addEventListener('pointerdown', e => { e.preventDefault(); dirHeld[btn.dataset.dir] = true; moveFrog(btn.dataset.dir); moveCooldown = 9; }, { passive: false });
+    btn.addEventListener('pointerup',   () => { dirHeld[btn.dataset.dir] = false; });
+    btn.addEventListener('pointerleave',() => { dirHeld[btn.dataset.dir] = false; });
+  });
+
+  startBtn.addEventListener('click', () => {
+    settingsScreen.classList.remove('active');
+    gameScreen.classList.add('active');
+    startGame();
+  });
+  settingsBtn.addEventListener('click', () => {
+    cancelAnimationFrame(raf); gameOver = true;
+    gameScreen.classList.remove('active');
+    settingsScreen.classList.add('active');
+  });
+  pauseBtn.addEventListener('click', togglePause);
+  overlayBtn.addEventListener('click', startGame);
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (gameScreen.classList.contains('active') && !gameOver) startGame();
+    }, 150);
+  });
+})();
+</script>
