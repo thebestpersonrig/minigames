@@ -114,14 +114,14 @@ import GameLayout from '../../layouts/GameLayout.astro';
 
   .canvas-wrap {
     position: relative;
-    width: min(100vw - 20px, 460px);
-    aspect-ratio: 3 / 4;
+    width: min(100vw - 20px, 700px);
+    aspect-ratio: 3 / 2;
     border-radius: 14px; overflow: hidden;
     box-shadow: 0 10px 40px rgba(0,0,0,0.55);
   }
   @media (pointer: coarse) {
     .canvas-wrap {
-      width: min(100vw - 20px, calc((100dvh - 230px) * 3 / 4));
+      width: min(100vw - 20px, calc((100dvh - 230px) * 3 / 2));
     }
   }
   #si-canvas { display: block; width: 100%; height: 100%; }
@@ -139,7 +139,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
 
   .controls-row { display: flex; gap: 12px; }
 
-  .mobile-controls { display: none; gap: 10px; width: min(100vw - 20px, 460px); }
+  .mobile-controls { display: none; gap: 10px; width: min(100vw - 20px, 700px); }
   @media (pointer: coarse) { .mobile-controls { display: flex; } }
   .mob-btn {
     flex: 1; min-height: 52px; background: rgba(255,255,255,0.12);
@@ -170,7 +170,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
   @media (orientation: landscape) and (max-height: 500px) {
     .si-wrapper { flex-direction: row; padding: 8px 12px 8px clamp(44px,10vw,60px); gap: 12px; }
     .game-screen { flex-direction: row; align-items: center; gap: 12px; }
-    .canvas-wrap { width: auto; height: calc(100dvh - 60px); aspect-ratio: 3/4; }
+    .canvas-wrap { width: auto; height: calc(100dvh - 60px); aspect-ratio: 3/2; }
     .mobile-controls { display: none; }
   }
 </style>
@@ -210,6 +210,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
 
   /* ── State ── */
   let W, H, CS;
+  let alienW, alienH, colStride, rowStride, alienStep;
   let diff, aliens, player, pBullets, aBullets, shields;
   let score, best, lives, level, aliveCount;
   let alienDir, stepTimer, stepInterval, descendPending;
@@ -257,16 +258,21 @@ import GameLayout from '../../layouts/GameLayout.astro';
     ufo = null; ufoTimer = 0;
     fireCooldown = 0;
 
-    /* alien grid */
-    const colStride = CS * 1.55, rowStride = CS * 1.2;
-    const gridW = (ALIEN_COLS - 1) * colStride + CS;
-    const startX = (W - gridW) / 2;
-    const startY = H * 0.07 + (level - 1) * CS * 0.5;
+    /* alien grid — derived from canvas width so 11 columns always fit */
+    const GRID_W = W * 0.86;
+    colStride = GRID_W / ALIEN_COLS;
+    alienW    = colStride * 0.68;
+    alienH    = alienW * 0.72;
+    rowStride = alienH * 1.55;
+    alienStep = colStride * 0.3;
+    const startX = (W - GRID_W) / 2;
+    const startY = H * 0.07 + (level - 1) * alienH * 0.6;
 
     aliens = [];
     for (let r = 0; r < ALIEN_ROWS; r++)
       for (let c = 0; c < ALIEN_COLS; c++)
-        aliens.push({ x: startX + c * colStride, y: startY + r * rowStride, row: r, alive: true, frame: 0 });
+        aliens.push({ x: startX + c * colStride, y: startY + r * rowStride,
+                      w: alienW, h: alienH, row: r, alive: true, frame: 0 });
 
     /* player */
     player = { x: W / 2, y: H * 0.88, w: CS * 1.4, h: CS * 0.85 };
@@ -321,7 +327,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
     stepTimer = 0;
 
     if (descendPending) {
-      aliens.forEach(a => { if (a.alive) a.y += CS * 0.62; });
+      aliens.forEach(a => { if (a.alive) a.y += alienH * 0.85; });
       alienDir *= -1;
       descendPending = false;
       aliens.forEach(a => { if (a.alive) a.frame ^= 1; });
@@ -329,15 +335,14 @@ import GameLayout from '../../layouts/GameLayout.astro';
     }
 
     let minX = Infinity, maxX = -Infinity;
-    aliens.forEach(a => { if (!a.alive) return; if (a.x < minX) minX = a.x; if (a.x + CS > maxX) maxX = a.x + CS; });
+    aliens.forEach(a => { if (!a.alive) return; if (a.x < minX) minX = a.x; if (a.x + a.w > maxX) maxX = a.x + a.w; });
 
-    const step = CS * 0.32;
-    const wouldHit = (alienDir > 0 && maxX + step > W - 3) || (alienDir < 0 && minX - step < 3);
+    const wouldHit = (alienDir > 0 && maxX + alienStep > W - 6) || (alienDir < 0 && minX - alienStep < 6);
 
     if (wouldHit) {
       descendPending = true;
     } else {
-      aliens.forEach(a => { if (a.alive) a.x += step * alienDir; });
+      aliens.forEach(a => { if (a.alive) a.x += alienStep * alienDir; });
     }
     aliens.forEach(a => { if (a.alive) a.frame ^= 1; });
   }
@@ -350,14 +355,15 @@ import GameLayout from '../../layouts/GameLayout.astro';
         const a = aliens[r * ALIEN_COLS + c];
         if (a && a.alive) { lowest = a; break; }
       }
-      if (lowest && Math.random() < diff.shootRate * (TOTAL / aliveCount)) {
-        aBullets.push({ x: lowest.x + CS * 0.5, y: lowest.y + CS * 0.75, spd: H * 0.007 });
+      const maxAB = { easy: 2, medium: 4, hard: 7 }[diffSel.value];
+      if (lowest && aBullets.length < maxAB && Math.random() < diff.shootRate * (TOTAL / aliveCount)) {
+        aBullets.push({ x: lowest.x + lowest.w * 0.5, y: lowest.y + lowest.h, spd: H * 0.010 });
       }
     }
 
     /* UFO spawn */
     if (!ufo && ufoTimer > 500 + Math.random() * 700) {
-      ufo = { x: -CS * 2, y: H * 0.04, w: CS * 2, h: CS * 0.65, spd: W * 0.006 };
+      ufo = { x: -(alienW * 2.5), y: H * 0.04, w: alienW * 2.5, h: alienH, spd: W * 0.005 };
       ufoTimer = 0;
     }
   }
@@ -376,7 +382,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
   function moveUFO() {
     if (!ufo) return;
     ufo.x += ufo.spd;
-    if (ufo.x > W + CS * 2) ufo = null;
+    if (ufo.x > W + ufo.w) ufo = null;
   }
 
   function checkCollisions() {
@@ -386,7 +392,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
 
       for (const a of aliens) {
         if (!a.alive) continue;
-        if (b.x > a.x + 2 && b.x < a.x + CS - 2 && b.y > a.y && b.y < a.y + CS * 0.8) {
+        if (b.x > a.x + 2 && b.x < a.x + a.w - 2 && b.y > a.y && b.y < a.y + a.h) {
           a.alive = false; aliveCount--;
           addScore(ROW_PTS[a.row]); hit = true; break;
         }
@@ -439,7 +445,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
   function checkWinLose() {
     if (aliveCount === 0) { level++; setupLevel(); return; }
     for (const a of aliens) {
-      if (a.alive && a.y + CS * 0.8 >= player.y - player.h) { endGame(false); return; }
+      if (a.alive && a.y + a.h >= player.y - player.h) { endGame(false); return; }
     }
   }
 
@@ -504,7 +510,7 @@ import GameLayout from '../../layouts/GameLayout.astro';
   let alienBulletsTick = 0;
 
   function drawAlien(a) {
-    const x = a.x, y = a.y, w = CS, h = CS * 0.78, f = a.frame;
+    const x = a.x, y = a.y, w = a.w, h = a.h, f = a.frame;
     ctx.fillStyle = ROW_COLORS[a.row];
 
     if (a.row === 0) {
